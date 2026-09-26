@@ -1,0 +1,18 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# copied from node_modules by scripts/copy-maplibre-worker.mjs
+public/maplibre/
+
+# local data (uploaded thumbnails, search records, quota counters)
+.data/
+
+# secrets
+.env
+.env*.local
+
+npm-debug.log*
+.DS_Store
