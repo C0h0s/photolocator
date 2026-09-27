@@ -7,6 +7,9 @@ next-env.d.ts
 # copied from node_modules by scripts/copy-maplibre-worker.mjs
 public/maplibre/
 
+# downloaded by `npm run models:download`
+models/
+
 # local data (uploaded thumbnails, search records, quota counters)
 .data/
 

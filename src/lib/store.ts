@@ -24,6 +24,7 @@ export const isSearchId = (id: string) => UUID_RE.test(id);
 const dir = (name: string) => path.join(config.dataDir, name);
 const searchFile = (id: string) => path.join(dir("searches"), `${id}.json`);
 const thumbFile = (id: string) => path.join(dir("images"), `${id}.jpg`);
+const evidenceFile = (id: string, n: number) => path.join(dir("evidence"), id, `${n}.jpg`);
 const usageFile = (day: string) => path.join(dir("usage"), `${day}.json`);
 const ownerFile = (ownerId: string) => path.join(dir("owners"), `${ownerId.replace(/[^a-z0-9_-]/gi, "_")}.json`);
 
@@ -68,11 +69,12 @@ export async function saveSearch(record: SearchRecord): Promise<void> {
   await writeFileAtomic(searchFile(record.id), JSON.stringify(record));
 }
 
-export function updateSearch(id: string, patch: Partial<SearchRecord>): Promise<SearchRecord | null> {
+/** Read-modify-write under the store lock, e.g. to append log events. */
+export function mutateSearch(id: string, fn: (record: SearchRecord) => SearchRecord): Promise<SearchRecord | null> {
   return withLock(async () => {
     const record = await readJson<SearchRecord>(searchFile(id));
     if (!record) return null;
-    const next = { ...record, ...patch, updatedAt: new Date().toISOString() };
+    const next = { ...fn(record), updatedAt: new Date().toISOString() };
     await saveSearch(next);
     return next;
   });
@@ -93,6 +95,22 @@ export async function readThumbnail(id: string): Promise<Buffer | null> {
   if (!isSearchId(id)) return null;
   try {
     return await fs.readFile(thumbFile(id));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw err;
+  }
+}
+
+// --- evidence images (satellite snapshots, reference photos, crops) --------
+
+export async function saveEvidence(id: string, n: number, jpeg: Buffer): Promise<void> {
+  await writeFileAtomic(evidenceFile(id, n), jpeg);
+}
+
+export async function readEvidence(id: string, n: number): Promise<Buffer | null> {
+  if (!isSearchId(id) || !Number.isInteger(n) || n < 0) return null;
+  try {
+    return await fs.readFile(evidenceFile(id, n));
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw err;

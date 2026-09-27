@@ -51,3 +51,48 @@ export function formatRadius(radiusKm: number): string {
   if (radiusKm < 10) return `${radiusKm.toFixed(1).replace(/\.0$/, "")} km`;
   return `${Math.round(radiusKm).toLocaleString("en-US")} km`;
 }
+
+export interface WeightedPoint {
+  lat: number;
+  lng: number;
+  p: number;
+}
+
+export interface Cluster {
+  lat: number;
+  lng: number;
+  /** Summed probability of the member points. */
+  weight: number;
+  points: number;
+}
+
+/**
+ * Greedy clustering of ranked predictions: each point joins the first
+ * heavier cluster within `radiusKm`, else seeds a new one. Centers are the
+ * probability-weighted mean of their members.
+ */
+export function clusterPredictions(points: WeightedPoint[], radiusKm = 150, maxClusters = 6): Cluster[] {
+  const sorted = [...points].sort((a, b) => b.p - a.p);
+  const clusters: (Cluster & { seed: LatLng; sumLat: number; sumLng: number })[] = [];
+  for (const pt of sorted) {
+    const home = clusters.find((c) => haversineKm(c.seed, pt) <= radiusKm);
+    if (home) {
+      home.weight += pt.p;
+      home.points += 1;
+      // Longitudes are averaged relative to the seed so clusters straddling ±180° stay intact.
+      home.sumLat += pt.p * pt.lat;
+      home.sumLng += pt.p * (home.seed.lng + ((((pt.lng - home.seed.lng) % 360) + 540) % 360) - 180);
+    } else {
+      clusters.push({ seed: pt, lat: pt.lat, lng: pt.lng, weight: pt.p, points: 1, sumLat: pt.p * pt.lat, sumLng: pt.p * pt.lng });
+    }
+  }
+  return clusters
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, maxClusters)
+    .map((c) => ({
+      lat: c.sumLat / c.weight,
+      lng: ((((c.sumLng / c.weight) % 360) + 540) % 360) - 180,
+      weight: c.weight,
+      points: c.points,
+    }));
+}

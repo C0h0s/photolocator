@@ -6,7 +6,7 @@ import type { SessionUser } from "./types";
 // We only need the account's id, display name and avatar, so the sole scope
 // requested is read_prefs, and the access token is revoked right after use.
 
-const USER_AGENT = `PhotoLocator/0.1 (+${config.appUrl})`;
+const USER_AGENT = config.userAgent;
 
 export function createPkce() {
   const verifier = randomBytes(32).toString("base64url");

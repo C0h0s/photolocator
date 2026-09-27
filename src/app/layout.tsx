@@ -1,20 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
+import { DM_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import { config } from "@/lib/config";
 import "./globals.css";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const sans = Inter_Tight({ subsets: ["latin"], variable: "--font-sans" });
+const mono = DM_Mono({ subsets: ["latin"], weight: ["300", "400", "500"], variable: "--font-mono" });
 const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(config.appUrl),
-  title: { default: "PhotoLocator · Find where any photo was taken", template: "%s · PhotoLocator" },
-  description: "Upload a photo and AI reads the terrain, vegetation, architecture and signage to pin where it was taken on a 3D globe.",
+  title: { default: "PhotoLocator · Visual geolocation", template: "%s · PhotoLocator" },
+  description:
+    "Find where any photo was taken. An open region model ranks places worldwide, then an AI investigator reads the clues and verifies the spot against maps and satellite imagery.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#05070d",
+  themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
 };

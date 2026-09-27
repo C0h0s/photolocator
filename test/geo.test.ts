@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { circleRing, formatRadius, haversineKm, isValidLatLng, zoomForRadius } from "../src/lib/geo.ts";
+import { circleRing, clusterPredictions, formatRadius, haversineKm, isValidLatLng, zoomForRadius } from "../src/lib/geo.ts";
 
 test("haversine distance matches a known pair", () => {
   // Rancho Cucamonga to downtown Los Angeles is ~60 km.
@@ -34,4 +34,29 @@ test("coordinate validation and radius labels", () => {
   assert.equal(formatRadius(1.2), "1.2 km");
   assert.equal(formatRadius(3), "3 km");
   assert.equal(formatRadius(1250), "1,250 km");
+});
+
+test("clusters nearby predictions and ranks clusters by probability mass", () => {
+  const points = [
+    { lat: 34.1, lng: -117.6, p: 0.3 },
+    { lat: 34.2, lng: -117.5, p: 0.2 },
+    { lat: 51.3, lng: -116.2, p: 0.25 },
+    { lat: 51.4, lng: -116.1, p: 0.05 },
+    { lat: -1.3, lng: 36.8, p: 0.1 },
+  ];
+  const clusters = clusterPredictions(points, 150, 6);
+  assert.equal(clusters.length, 3);
+  assert.ok(Math.abs(clusters[0].weight - 0.5) < 1e-9);
+  assert.equal(clusters[0].points, 2);
+  assert.ok(Math.abs(clusters[0].lat - 34.14) < 1e-9, "weighted mean latitude");
+  assert.ok(Math.abs(clusters[1].weight - 0.3) < 1e-9);
+  assert.equal(clusterPredictions(points, 150, 2).length, 2);
+});
+
+test("clusters straddling the antimeridian keep a sensible centre", () => {
+  const [c] = clusterPredictions([
+    { lat: -17, lng: 179.9, p: 0.5 },
+    { lat: -17, lng: -179.9, p: 0.5 },
+  ]);
+  assert.ok(Math.abs(Math.abs(c.lng) - 180) < 0.2, `got ${c.lng}`);
 });

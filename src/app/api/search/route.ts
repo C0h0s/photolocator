@@ -38,7 +38,8 @@ export async function POST(request: Request) {
   const mode = form.get("mode") === "deep" ? "deep" : "quick";
 
   const requester = await getRequester();
-  if (mode === "deep" && !requester.user) {
+  // With OSM sign-in configured, deep search (the costly mode) is for signed-in users.
+  if (mode === "deep" && !requester.user && osmEnabled()) {
     return fail("Sign in with OpenStreetMap to use Deep search.", 401, { code: "auth" });
   }
 
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  const analysisImage = image.analysis;
-  after(() => runSearch(record, analysisImage));
+  const prepared = image;
+  after(() => runSearch(record, prepared));
   return NextResponse.json({ id: record.id, quota }, { status: 201 });
 }

@@ -5,7 +5,7 @@ import { osmEnabled } from "@/lib/config";
 import { getSession } from "@/lib/session";
 import { listOwnerSearches } from "@/lib/store";
 
-export const metadata = { title: "Your searches" };
+export const metadata = { title: "Your cases" };
 
 export default async function HistoryPage() {
   const user = await getSession();
@@ -17,7 +17,8 @@ export default async function HistoryPage() {
       <div className="stars" aria-hidden />
       <TopBar user={user} osmEnabled={osmEnabled()} returnTo="/history" />
       <section className="page__content">
-        <h1 className="page__title">Your searches</h1>
+        <span className="eyebrow mono">Case history</span>
+        <h1 className="page__title">Your cases</h1>
         {searches.length === 0 ? (
           <p className="muted">
             Nothing yet. <Link href="/">Locate your first photo →</Link>
@@ -26,13 +27,13 @@ export default async function HistoryPage() {
           <ul className="history">
             {searches.map((s) => (
               <li key={s.id}>
-                <Link href={`/search/${s.id}`} className="history__item">
+                <Link href={`/search/${s.id}`} className="history__item glass">
                   <img src={`/api/search/${s.id}/image`} alt="" loading="lazy" />
                   <span className="history__text">
                     <span className="history__name">
-                      {s.result?.name ?? (s.status === "failed" ? "Analysis failed" : "Analyzing…")}
+                      {s.result?.name ?? (s.status === "failed" ? "Analysis failed" : "Investigating…")}
                     </span>
-                    <span className="history__meta">
+                    <span className="history__meta mono">
                       {s.mode === "deep" ? "Deep search" : "Quick find"} · {new Date(s.createdAt).toUTCString().slice(5, 22)} UTC
                     </span>
                   </span>

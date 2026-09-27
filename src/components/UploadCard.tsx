@@ -2,23 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import * as Icon from "@/components/icons";
 import type { QuotaStatus, SearchMode } from "@/lib/types";
 
 interface Props {
   signedIn: boolean;
   osmEnabled: boolean;
+  /** Deep search is gated behind sign-in whenever OSM sign-in is configured. */
+  deepLocked: boolean;
   quota: QuotaStatus;
   authError?: string;
 }
 
 const MAX_BYTES = 15 * 1024 * 1024;
 
-export default function UploadCard({ signedIn, osmEnabled, quota, authError }: Props) {
+export default function UploadCard({ signedIn, osmEnabled, deepLocked, quota, authError }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [mode, setMode] = useState<SearchMode>("quick");
+  const [mode, setMode] = useState<SearchMode>(deepLocked ? "quick" : "deep");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(authError ?? null);
@@ -67,14 +70,14 @@ export default function UploadCard({ signedIn, osmEnabled, quota, authError }: P
   }
 
   const outOfSearches = quota.remaining === 0;
-  const deepLocked = !signedIn;
 
   return (
-    <div className="upload">
+    <div className="upload glass">
       <div
-        className={`dropzone${dragging ? " dropzone--active" : ""}${preview ? " dropzone--filled" : ""}`}
+        className={`drop${dragging ? " drop--active" : ""}${preview ? " drop--filled" : ""}`}
         role="button"
         tabIndex={0}
+        aria-label="Choose a photo"
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
         onDragOver={(e) => {
@@ -89,12 +92,17 @@ export default function UploadCard({ signedIn, osmEnabled, quota, authError }: P
         }}
       >
         {preview ? (
-          <img src={preview} alt="Selected photo" className="dropzone__preview" />
+          <>
+            <img src={preview} alt="Selected photo" className="drop__preview" />
+            <span className="drop__swap mono">Click to change</span>
+          </>
         ) : (
-          <div className="dropzone__empty">
-            <UploadIcon />
-            <strong>Drop a photo here</strong>
-            <span>or click to browse · paste works too</span>
+          <div className="drop__empty">
+            <span className="drop__icon">
+              <Icon.Upload size={22} />
+            </span>
+            <strong>Drop a photo to locate</strong>
+            <span className="mono">JPG · PNG · WebP · paste works too</span>
           </div>
         )}
         <input
@@ -111,8 +119,10 @@ export default function UploadCard({ signedIn, osmEnabled, quota, authError }: P
 
       <div className="modes" role="radiogroup" aria-label="Search mode">
         <button type="button" role="radio" aria-checked={mode === "quick"} className="mode" onClick={() => setMode("quick")}>
-          <span className="mode__title">Quick find</span>
-          <span className="mode__hint">Fast read of the obvious clues</span>
+          <span className="mode__title">
+            <Icon.Eye size={14} /> Quick find
+          </span>
+          <span className="mode__hint">Region model + one visual read · ~20 s</span>
         </button>
         <button
           type="button"
@@ -123,33 +133,26 @@ export default function UploadCard({ signedIn, osmEnabled, quota, authError }: P
           onClick={() => setMode("deep")}
           title={deepLocked ? "Sign in with OpenStreetMap to unlock" : undefined}
         >
-          <span className="mode__title">Deep search {deepLocked && <span className="mode__lock">🔒</span>}</span>
-          <span className="mode__hint">{deepLocked ? "Sign in to unlock" : "Slower, more thorough reasoning"}</span>
+          <span className="mode__title">
+            {deepLocked ? <Icon.Lock size={14} /> : <Icon.Shield size={14} />} Deep search
+          </span>
+          <span className="mode__hint">{deepLocked ? "Sign in to unlock" : "Investigates & verifies · 1–4 min"}</span>
         </button>
       </div>
 
       {error && <p className="notice notice--error">{error}</p>}
 
-      <button type="button" className="cta" disabled={!file || busy || outOfSearches} onClick={submit}>
-        {busy ? "Uploading…" : "Locate photo"}
+      <button type="button" className="btn btn--primary btn--block" disabled={!file || busy || outOfSearches} onClick={submit}>
+        {busy ? "Uploading…" : "Locate photo"} {!busy && <Icon.ArrowRight size={15} />}
       </button>
 
-      <p className="quota">
+      <p className="quota mono">
         {outOfSearches
           ? signedIn || !osmEnabled
             ? "No searches left today · resets 00:00 UTC"
-            : "No free searches left today · sign in with OpenStreetMap for more"
-          : `${quota.remaining} of ${quota.limit} ${signedIn ? "" : "free "}search${quota.limit === 1 ? "" : "es"} left today · resets 00:00 UTC`}
+            : "No free searches left today · sign in for more"
+          : `${quota.remaining}/${quota.limit} ${signedIn ? "" : "free "}search${quota.limit === 1 ? "" : "es"} left today · resets 00:00 UTC`}
       </p>
     </div>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-      <path d="M12 16V4m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3" strokeLinecap="round" />
-    </svg>
   );
 }

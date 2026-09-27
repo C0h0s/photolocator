@@ -1,24 +1,34 @@
 import Link from "next/link";
+import * as Icon from "@/components/icons";
 import type { SessionUser } from "@/lib/types";
 
 interface Props {
   user: SessionUser | null;
   osmEnabled: boolean;
   returnTo?: string;
+  /** Show the landing-page section links. */
+  sections?: boolean;
 }
 
-export default function TopBar({ user, osmEnabled, returnTo = "/" }: Props) {
+export default function TopBar({ user, osmEnabled, returnTo = "/", sections = false }: Props) {
   return (
-    <header className="topbar">
+    <header className="nav">
       <Link href="/" className="brand">
-        <span className="brand__dot" aria-hidden />
-        PhotoLocator
+        <Icon.Logo size={20} />
+        <span>PhotoLocator</span>
       </Link>
-      <nav className="topbar__nav">
+      {sections && (
+        <nav className="nav__links" aria-label="Sections">
+          <a href="#how">How it works</a>
+          <a href="#models">Models</a>
+          <a href="#trust">Responsible use</a>
+        </nav>
+      )}
+      <div className="nav__right">
         {user ? (
           <>
-            <Link href="/history" className="chip">
-              History
+            <Link href="/history" className="btn btn--ghost">
+              Cases
             </Link>
             <span className="user">
               {user.avatar ? (
@@ -31,27 +41,17 @@ export default function TopBar({ user, osmEnabled, returnTo = "/" }: Props) {
               <span className="user__name">{user.name}</span>
             </span>
             <form action="/api/auth/logout" method="post">
-              <button type="submit" className="chip">
+              <button type="submit" className="btn btn--ghost">
                 Sign out
               </button>
             </form>
           </>
         ) : osmEnabled ? (
-          <a href={`/api/auth/osm/login?returnTo=${encodeURIComponent(returnTo)}`} className="chip chip--osm">
-            <OsmLogo />
-            Sign in with OpenStreetMap
+          <a href={`/api/auth/osm/login?returnTo=${encodeURIComponent(returnTo)}`} className="btn btn--ghost btn--osm">
+            <Icon.Osm /> Sign in with OpenStreetMap
           </a>
         ) : null}
-      </nav>
+      </div>
     </header>
-  );
-}
-
-function OsmLogo() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M4 14l5-4 4 3 7-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
